@@ -35,13 +35,12 @@ from utils.utils import create_logger, FullModel
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train segmentation network')
-    
     parser.add_argument('--cfg',
                         help='experiment configure file name',
                         required=True,
                         type=str)
     parser.add_argument('--seed', type=int, default=304)
-    parser.add_argument("--local_rank", type=int, default=-1)       
+    parser.add_argument("--local_rank", type=int, default=-1)
     parser.add_argument('opts',
                         help="Modify config options using the command-line",
                         default=None,
@@ -62,12 +61,13 @@ def get_sampler(dataset):
 
 def main():
     args = parse_args()
+    print('default value of args.local_rank: ', args.local_rank)
 
     if args.seed > 0:
         import random
         print('Seeding with', args.seed)
         random.seed(args.seed)
-        torch.manual_seed(args.seed)        
+        torch.manual_seed(args.seed)
 
     logger, final_output_dir, tb_log_dir = create_logger(
         config, args.cfg, 'train')
@@ -86,13 +86,17 @@ def main():
     cudnn.deterministic = config.CUDNN.DETERMINISTIC
     cudnn.enabled = config.CUDNN.ENABLED
     gpus = list(config.GPUS)
+
+    # this decides whether the training happens in a distributed fashion or not
+    # also decides how SyncBatchNorm is called
     distributed = args.local_rank >= 0
     if distributed:
-        device = torch.device('cuda:{}'.format(args.local_rank))    
+        print('yes distributed')
+        device = torch.device('cuda:{}'.format(args.local_rank))
         torch.cuda.set_device(device)
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://",
-        )        
+        )
 
     # build model
     model = eval('models.'+config.MODEL.NAME +
@@ -103,6 +107,7 @@ def main():
     # )
     # logger.info(get_model_summary(model.cuda(), dump_input.cuda()))
 
+    print('line 108')
     # copy model file
     if distributed and args.local_rank == 0:
         this_dir = os.path.dirname(__file__)
@@ -116,7 +121,8 @@ def main():
     else:
         batch_size = config.TRAIN.BATCH_SIZE_PER_GPU * len(gpus)
 
-    # prepare data
+    print('line 122')
+    # prepare data - nn.Dataset object for training
     crop_size = (config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
     train_dataset = eval('datasets.'+config.DATASET.DATASET)(
                         root=config.DATASET.ROOT,
@@ -132,6 +138,8 @@ def main():
                         scale_factor=config.TRAIN.SCALE_FACTOR)
 
     train_sampler = get_sampler(train_dataset)
+
+    # dataloader for training nn.Dataset object
     trainloader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -142,6 +150,8 @@ def main():
         sampler=train_sampler)
 
     extra_epoch_iters = 0
+
+    # extra train nn.Dataset and Dataloader
     if config.DATASET.EXTRA_TRAIN_SET:
         extra_train_dataset = eval('datasets.'+config.DATASET.DATASET)(
                     root=config.DATASET.ROOT,
@@ -168,6 +178,7 @@ def main():
                         config.TRAIN.BATCH_SIZE_PER_GPU / len(gpus))
 
 
+    # test nn.Dataset and Dataloader
     test_size = (config.TEST.IMAGE_SIZE[1], config.TEST.IMAGE_SIZE[0])
     test_dataset = eval('datasets.'+config.DATASET.DATASET)(
                         root=config.DATASET.ROOT,
@@ -181,6 +192,7 @@ def main():
                         crop_size=test_size,
                         downsample_rate=1)
 
+    # test dataloader
     test_sampler = get_sampler(test_dataset)
     testloader = torch.utils.data.DataLoader(
         test_dataset,
@@ -190,7 +202,8 @@ def main():
         pin_memory=True,
         sampler=test_sampler)
 
-    # criterion
+    print('line 203')
+    # criterion - loss 
     if config.LOSS.USE_OHEM:
         criterion = OhemCrossEntropy(ignore_label=config.TRAIN.IGNORE_LABEL,
                                         thres=config.LOSS.OHEMTHRES,
@@ -200,19 +213,29 @@ def main():
         criterion = CrossEntropy(ignore_label=config.TRAIN.IGNORE_LABEL,
                                     weight=train_dataset.class_weights)
 
+    # priming the model ???
     model = FullModel(model, criterion)
+
+    print('line 217')
+    # train over multiple GPUs and multiple machines
     if distributed:
         model = model.to(device)
-        model = torch.nn.parallel.DistributedDataParallel(
-            model,
-            find_unused_parameters=True,
-            device_ids=[args.local_rank],
-            output_device=args.local_rank
-        )
+        print('line 221')
+        try:
+            model = torch.nn.parallel.DistributedDataParallel(
+                model,
+                find_unused_parameters=True,
+                device_ids=[args.local_rank],
+                output_device=args.local_rank
+            )
+        except:
+            sys.exit()
+        print('line 228')
     else:
+        # train over multiple GPUs
         model = nn.DataParallel(model, device_ids=gpus).cuda()
-    
 
+    print('line 231')
     # optimizer
     if config.TRAIN.OPTIMIZER == 'sgd':
 
@@ -246,6 +269,8 @@ def main():
         
     best_mIoU = 0
     last_epoch = 0
+
+    # resuming trianing from previously trained weights
     if config.TRAIN.RESUME:
         model_state_file = os.path.join(final_output_dir,
                                         'checkpoint.pth.tar')
@@ -266,7 +291,9 @@ def main():
     end_epoch = config.TRAIN.END_EPOCH + config.TRAIN.EXTRA_EPOCH
     num_iters = config.TRAIN.END_EPOCH * epoch_iters
     extra_iters = config.TRAIN.EXTRA_EPOCH * extra_epoch_iters
-    
+
+    print('line 288')
+    # main training loop
     for epoch in range(last_epoch, end_epoch):
 
         current_trainloader = extra_trainloader if epoch >= config.TRAIN.END_EPOCH else trainloader
@@ -289,6 +316,7 @@ def main():
         valid_loss, mean_IoU, IoU_array = validate(config, 
                     testloader, model, writer_dict)
 
+        # logging various training related metric and files
         if args.local_rank <= 0:
             logger.info('=> saving checkpoint to {}'.format(
                 final_output_dir + 'checkpoint.pth.tar'))
@@ -307,6 +335,7 @@ def main():
             logging.info(msg)
             logging.info(IoU_array)
 
+    # final logging
     if args.local_rank <= 0:
 
         torch.save(model.module.state_dict(),

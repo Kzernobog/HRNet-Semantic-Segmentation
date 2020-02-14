@@ -1,0 +1,12 @@
+Getting the network to train on Small obstacle dataset
+- [ ] figure out a way to use SyncBatchNorm with nn.DataParallel
+- [ ] figure out why train_distributed hangs
+  - [ ] experiment with local rank args option
+  - [ ] it is definitely a problem with NCCL, what is it??
+    - [ ] figure out "NCCL INFO Call to connect returned Connection refused, retrying"
+  - [X] try out WORKERS = 1 -> still hangs
+  - [X] try out nproc = 1 tag while calling the torch.distributed.launch in the startup script -> still hangs
+  - [X] GPUs = (0,) -> still hangs
+  - [X] prints on train.py -> still hangs
+  - [X] Find out where exactly it hangs -> hanging when wrapping model with nn.DistributedDataParallel
+  - [X] why is the default value of local_rank not -1, even though we are not giving anything -> this has to be because torch.distributed.launch passes this argument to the python script

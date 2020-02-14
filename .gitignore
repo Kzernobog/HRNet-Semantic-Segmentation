@@ -8,3 +8,8 @@ pretrained_models
 scripts/
 detail-api/
 data/list
+*.DS_Store
+*.swp
+*.sh
+pretrained/
+env/

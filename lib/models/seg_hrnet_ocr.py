@@ -659,9 +659,9 @@ class HighResolutionNet(nn.Module):
             pretrained_dict = torch.load(pretrained, map_location={'cuda:0': 'cpu'})
             logger.info('=> loading pretrained model {}'.format(pretrained))
             model_dict = self.state_dict()
-            pretrained_dict = {k.replace('last_layer', 'aux_head').replace('model.', ''): v for k, v in pretrained_dict.items()}  
-            print(set(model_dict) - set(pretrained_dict))            
-            print(set(pretrained_dict) - set(model_dict))            
+            pretrained_dict = {k.replace('last_layer', 'aux_head').replace('model.', ''): v for k, v in pretrained_dict.items()}
+            print(set(model_dict) - set(pretrained_dict))
+            print(set(pretrained_dict) - set(model_dict))
             pretrained_dict = {k: v for k, v in pretrained_dict.items()
                                if k in model_dict.keys()}
             # for k, _ in pretrained_dict.items():
@@ -678,3 +678,11 @@ def get_seg_model(cfg, **kwargs):
     model.init_weights(cfg.MODEL.PRETRAINED)
 
     return model
+
+if __name__ == "__main__":
+    # change aux_head.3.weight from ([19, 720, 1, 1]) to ([3, 720, 1, 1])
+    # change aux_head.3.bias from ([19]) to ([3])
+    pretrained = '/home/aditya/small_obstacle_ws/HRNet/pretrained/hrnet_cs_8090_torch11.pth'
+    pretrained_dict = torch.load(pretrained, map_location={'cuda:0': 'cpu'})
+    print(pretrained_dict['state_dict']['aux_head.3.weight'].shape)
+    print(pretrained_dict['state_dict']['aux_head.3.bias'].shape)
