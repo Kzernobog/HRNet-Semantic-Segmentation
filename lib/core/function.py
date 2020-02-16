@@ -38,7 +38,7 @@ def reduce_tensor(inp):
 
 
 def train(config, epoch, num_epoch, epoch_iters, base_lr,
-          num_iters, trainloader, optimizer, model, writer_dict):
+          num_iters, trainloader, optimizer, model, criterion, writer_dict):
     # Training
     model.train()
 
@@ -54,8 +54,13 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr,
         images = images.cuda()
         labels = labels.long().cuda()
 
-        losses, _ = model(images, labels)
-        loss = losses.mean()
+        # losses, _ = model(images, labels)
+        output = model(images)
+        loss = torch.unsqueeze(criterion(output, labels), 0).mean()
+        # print('losses shape: ', losses.shape)
+        # loss = losses.mean().contiguous()
+        # print('loss shape: ', loss.shape)
+        # print('loss: ', loss.item())
 
         if dist.is_distributed():
             reduced_loss = reduce_tensor(loss)
@@ -88,7 +93,7 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr,
     writer.add_scalar('train_loss', ave_loss.average(), global_steps)
     writer_dict['train_global_steps'] = global_steps + 1
 
-def validate(config, testloader, model, writer_dict):
+def validate(config, testloader, model, criterion, writer_dict):
     model.eval()
     ave_loss = AverageMeter()
     nums = config.MODEL.NUM_OUTPUTS
@@ -101,7 +106,9 @@ def validate(config, testloader, model, writer_dict):
             image = image.cuda()
             label = label.long().cuda()
 
-            losses, pred = model(image, label)
+            # losses, pred = model(image, label)
+            pred = model(image)
+            loss = torch.unsqueeze(criterion(pred, labels), 0).mean()
             if not isinstance(pred, (list, tuple)):
                 pred = [pred]
             for i, x in enumerate(pred):

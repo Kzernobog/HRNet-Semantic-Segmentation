@@ -42,7 +42,9 @@ class BaseDataset(data.Dataset):
         return len(self.files)
 
     def input_transform(self, image):
-        image = image.astype(np.float32)[:, :, ::-1]
+        # remove the flip
+        # image = image.astype(np.float32)[:, :, ::-1]
+        image = image.astype(np.float32)
         image = image / 255.0
         image -= self.mean
         image /= self.std
@@ -116,30 +118,30 @@ class BaseDataset(data.Dataset):
 
     def gen_sample(self, image, label,
                    multi_scale=True, is_flip=True):
-        if multi_scale:
-            rand_scale = 0.5 + random.randint(0, self.scale_factor) / 10.0
-            image, label = self.multi_scale_aug(image, label,
-                                                rand_scale=rand_scale)
+        # if multi_scale:
+        #     rand_scale = 0.5 + random.randint(0, self.scale_factor) / 10.0
+        #     image, label = self.multi_scale_aug(image, label,
+        #                                         rand_scale=rand_scale)
 
-        image = self.random_brightness(image)
+        # image = self.random_brightness(image)
         image = self.input_transform(image)
         label = self.label_transform(label)
 
         image = image.transpose((2, 0, 1))
 
-        if is_flip:
-            flip = np.random.choice(2) * 2 - 1
-            image = image[:, :, ::flip]
-            label = label[:, ::flip]
+        # if is_flip:
+        #     flip = np.random.choice(2) * 2 - 1
+        #     image = image[:, :, ::flip]
+        #     label = label[:, ::flip]
 
-        if self.downsample_rate != 1:
-            label = cv2.resize(
-                label,
-                None,
-                fx=self.downsample_rate,
-                fy=self.downsample_rate,
-                interpolation=cv2.INTER_NEAREST
-            )
+        # if self.downsample_rate != 1:
+        #     label = cv2.resize(
+        #         label,
+        #         None,
+        #         fx=self.downsample_rate,
+        #         fy=self.downsample_rate,
+        #         interpolation=cv2.INTER_NEAREST
+        #     )
 
         return image, label
 

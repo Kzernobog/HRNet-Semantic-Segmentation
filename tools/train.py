@@ -6,6 +6,7 @@
 
 import argparse
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2"
 import pprint
 import shutil
 import sys
@@ -214,7 +215,7 @@ def main():
                                     weight=train_dataset.class_weights)
 
     # priming the model ???
-    model = FullModel(model, criterion)
+    # model = FullModel(model, criterion)
 
     print('line 217')
     # train over multiple GPUs and multiple machines
@@ -233,7 +234,10 @@ def main():
         print('line 228')
     else:
         # train over multiple GPUs
-        model = nn.DataParallel(model, device_ids=gpus).cuda()
+        model = nn.DataParallel(model, device_ids=gpus)
+        # patch replicate and then convert to cuda, as done in deeplab
+        models.deeplab_sbn.replicate.patch_replication_callback(model)
+        model = model.cuda()
 
     print('line 231')
     # optimizer
@@ -266,11 +270,10 @@ def main():
 
     epoch_iters = np.int(train_dataset.__len__() / 
                         config.TRAIN.BATCH_SIZE_PER_GPU / len(gpus))
-        
     best_mIoU = 0
     last_epoch = 0
 
-    # resuming trianing from previously trained weights
+    # resuming training from previously trained weights
     if config.TRAIN.RESUME:
         model_state_file = os.path.join(final_output_dir,
                                         'checkpoint.pth.tar')
@@ -279,7 +282,6 @@ def main():
             best_mIoU = checkpoint['best_mIoU']
             last_epoch = checkpoint['epoch']
             dct = checkpoint['state_dict']
-            
             model.module.model.load_state_dict({k.replace('model.', ''): v for k, v in checkpoint['state_dict'].items() if k.startswith('model.')})
             optimizer.load_state_dict(checkpoint['optimizer'])
             logger.info("=> loaded checkpoint (epoch {})"
@@ -307,14 +309,14 @@ def main():
             train(config, epoch-config.TRAIN.END_EPOCH, 
                   config.TRAIN.EXTRA_EPOCH, extra_epoch_iters, 
                   config.TRAIN.EXTRA_LR, extra_iters, 
-                  extra_trainloader, optimizer, model, writer_dict)
+                  extra_trainloader, optimizer, model, criterion, writer_dict)
         else:
             train(config, epoch, config.TRAIN.END_EPOCH, 
                   epoch_iters, config.TRAIN.LR, num_iters,
-                  trainloader, optimizer, model, writer_dict)
+                  trainloader, optimizer, model, criterion, writer_dict)
 
         valid_loss, mean_IoU, IoU_array = validate(config, 
-                    testloader, model, writer_dict)
+                    testloader, model, criterion, writer_dict)
 
         # logging various training related metric and files
         if args.local_rank <= 0:

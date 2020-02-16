@@ -1,5 +1,4 @@
 import os
-
 import cv2
 import numpy as np
 from PIL import Image
@@ -55,11 +54,12 @@ class Smallobs(BaseDataset):
         #                       31: 16, 32: 17, 33: 18}
 
         self.label_mapping = {0: 0, 1: 1, 2: 2, 255: 0}
-        self.class_weights = torch.FloatTensor([0.8373, 0.918, 0.866, 1.0345, 
-                                        1.0166, 0.9969, 0.9754, 1.0489,
-                                        0.8786, 1.0023, 0.9539, 0.9843, 
-                                        1.1116, 0.9037, 1.0865, 1.0955, 
-                                        1.0865, 1.1529, 1.0507]).cuda()
+        # self.class_weights = torch.FloatTensor([0.8373, 0.918, 0.866, 1.0345, 
+        #                                 1.0166, 0.9969, 0.9754, 1.0489,
+        #                                 0.8786, 1.0023, 0.9539, 0.9843, 
+        #                                 1.1116, 0.9037, 1.0865, 1.0955, 
+        #                                 1.0865, 1.1529, 1.0507]).cuda()
+        self.class_weights = None
     
     def read_files(self):
         files = []
@@ -96,12 +96,14 @@ class Smallobs(BaseDataset):
     def __getitem__(self, index):
         item = self.files[index]
         name = item["name"]
-        image = cv2.imread(os.path.join(self.root,'cityscapes',item["img"]),
-                           cv2.IMREAD_COLOR)
+        image_path = os.path.join(self.root, 'cityscapes', item["img"])
+        image = np.asarray(Image.open(image_path))
+        # image = cv2.imread(os.path.join(self.root,'cityscapes',item["img"]), cv2.IMREAD_COLOR)
 
         # crop image
-        image = image[50:562, 280:1000, :]
+        image = image[50:562, 280:1000, :3].copy()
         size = image.shape
+        # print('size: ', size)
 
         if 'test' in self.list_path:
             image = self.input_transform(image)
@@ -109,15 +111,27 @@ class Smallobs(BaseDataset):
 
             return image.copy(), np.array(size), name
 
-        label = cv2.imread(os.path.join(self.root,'cityscapes',item["label"]),
-                           cv2.IMREAD_GRAYSCALE)
-        label = label[50:562, 280:1000]
-        label = self.convert_label(label)
+        temp_path = os.path.join(self.root,'cityscapes',item["label"])
+        # label = cv2.imread(os.path.join(self.root,'cityscapes',item["label"]), cv2.IMREAD_GRAYSCALE)
+        label = np.asarray(Image.open(temp_path))
+        label = label[50:562, 280:1000].copy()
+        label[label == 255] = 0
+        label[label > 2] = 2
+        # label_unique = np.unique(label)
+        # print('unique labels: ', label_unique)
+        print('label shape: ', label.shape)
 
-        image, label = self.gen_sample(image, label, 
-                                self.multi_scale, self.flip)
+        # converts labels for the cityscapes dataset
+        # label = self.convert_label(label)
 
-        return image.copy(), label.copy(), np.array(size), name
+        label = np.ascontiguousarray(label)
+        image = np.ascontiguousarray(image)
+
+        image, label = self.gen_sample(image, label, self.multi_scale, self.flip)
+
+
+        # return torch.from_numpy(image), torch.from_numpy(label), np.array(size), name
+        return image, label, np.array(size), name
 
     def multi_scale_inference(self, config, model, image, scales=[1], flip=False):
         batch, _, ori_height, ori_width = image.size()

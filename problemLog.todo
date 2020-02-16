@@ -1,5 +1,22 @@
 Getting the network to train on Small obstacle dataset
-- [ ] figure out a way to use SyncBatchNorm with nn.DataParallel
+- [X] cuDNN error: error may be due to non contiguous tensor input, happening when back propogating loss
+  - [X] try calculating loss outside the model -> did not work, same error
+    - [X] change from FullModel to normal model
+    - [X] send the criterion into train function as a parameter
+    - [X] modify train function accordingly
+  - [X] change version of pytorch to 1.1.0, from 1.4.0 -> worked
+- [ ] define the class weight tensor for loss
+  - [ ] create batch wise class weights
+  - [ ] create batch wise loss computation
+- [X] custom dataloader issues, negative numpy strides not compatible with pytorch issue -> dont splice numpy array with a negative splice (# image = image.astype(np.float32)[:, :, ::-1]), this has some issue with pytorch
+- [ ] figure out a way to use SyncBatchNorm with nn.DataParallel, it can only be used with torch's nn.DistributedDataParallel
+  - [X] try and use DeepLab's SynchronizedBatchNorm2D implementation with nn.DataParallel
+  - [X] change bn_helper.py to return deeplab_sbn.py's batchnorm, instead of torch's batchnorm
+  - [X] include patch_replicate
+- [ ] integrate aasheesh's tensorboard ideas
+- [ ] integrate deeplab metrics
+- [ ] integrate mlflow tracking
+- [ ] remove all print statements
 - [ ] figure out why train_distributed hangs
   - [ ] experiment with local rank args option
   - [ ] it is definitely a problem with NCCL, what is it??
