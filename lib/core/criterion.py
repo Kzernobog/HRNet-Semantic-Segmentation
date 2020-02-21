@@ -20,18 +20,19 @@ class CrossEntropy(nn.Module):
             ignore_index=ignore_label
         )
 
-    def _forward(self, score, target):
+    def _forward(self, score, target, class_weight):
         ph, pw = score.size(2), score.size(3)
         h, w = target.size(1), target.size(2)
         if ph != h or pw != w:
             score = F.interpolate(input=score, size=(
                 h, w), mode='bilinear', align_corners=config.MODEL.ALIGN_CORNERS)
 
+        self.criterion = nn.CrossEntropyLoss(weight = class_weight, ignore_index = self.ignore_label)
         loss = self.criterion(score, target)
 
         return loss
 
-    def forward(self, score, target):
+    def forward(self, score, target, class_weight):
 
         if config.MODEL.NUM_OUTPUTS == 1:
             score = [score]
@@ -39,7 +40,7 @@ class CrossEntropy(nn.Module):
         weights = config.LOSS.BALANCE_WEIGHTS
         assert len(weights) == len(score)
 
-        return sum([w * self._forward(x, target) for (w, x) in zip(weights, score)])
+        return sum([w * self._forward(x, target, class_weight) for (w, x) in zip(weights, score)])
 
 
 class OhemCrossEntropy(nn.Module):

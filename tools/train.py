@@ -23,16 +23,18 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.optim
 from tensorboardX import SummaryWriter
-
+from tqdm import tqdm
 import _init_paths
 import models
 import datasets
 from config import config
 from config import update_config
 from core.criterion import CrossEntropy, OhemCrossEntropy
-from core.function import train, validate
+from core.function import train, validate, testval
 from utils.modelsummary import get_model_summary
 from utils.utils import create_logger, FullModel
+from utils.metrics import Evaluator
+from utils.summary import TensorboardSummary
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train segmentation network')
@@ -77,10 +79,14 @@ def main():
     logger.info(config)
 
     writer_dict = {
-        'writer': SummaryWriter(tb_log_dir),
+        'writer': TensorboardSummary(tb_log_dir),
         'train_global_steps': 0,
         'valid_global_steps': 0,
     }
+    writer_dict['writer'].create_summary()
+
+    # create evaluator
+    evaluator = Evaluator(config.DATASET.NUM_CLASSES)
 
     # cudnn related setting
     cudnn.benchmark = config.CUDNN.BENCHMARK
@@ -108,7 +114,6 @@ def main():
     # )
     # logger.info(get_model_summary(model.cuda(), dump_input.cuda()))
 
-    print('line 108')
     # copy model file
     if distributed and args.local_rank == 0:
         this_dir = os.path.dirname(__file__)
@@ -122,7 +127,6 @@ def main():
     else:
         batch_size = config.TRAIN.BATCH_SIZE_PER_GPU * len(gpus)
 
-    print('line 122')
     # prepare data - nn.Dataset object for training
     crop_size = (config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
     train_dataset = eval('datasets.'+config.DATASET.DATASET)(
@@ -197,13 +201,12 @@ def main():
     test_sampler = get_sampler(test_dataset)
     testloader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=batch_size,
+        batch_size=config.TEST.BATCH_SIZE_PER_GPU,
         shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=True,
         sampler=test_sampler)
 
-    print('line 203')
     # criterion - loss 
     if config.LOSS.USE_OHEM:
         criterion = OhemCrossEntropy(ignore_label=config.TRAIN.IGNORE_LABEL,
@@ -217,11 +220,9 @@ def main():
     # priming the model ???
     # model = FullModel(model, criterion)
 
-    print('line 217')
     # train over multiple GPUs and multiple machines
     if distributed:
         model = model.to(device)
-        print('line 221')
         try:
             model = torch.nn.parallel.DistributedDataParallel(
                 model,
@@ -231,7 +232,6 @@ def main():
             )
         except:
             sys.exit()
-        print('line 228')
     else:
         # train over multiple GPUs
         model = nn.DataParallel(model, device_ids=gpus)
@@ -239,7 +239,6 @@ def main():
         models.deeplab_sbn.replicate.patch_replication_callback(model)
         model = model.cuda()
 
-    print('line 231')
     # optimizer
     if config.TRAIN.OPTIMIZER == 'sgd':
 
@@ -254,7 +253,7 @@ def main():
                     nbb_keys.add(k)
                 else:
                     bb_lr.append(param)
-            print(nbb_keys)
+            # print(nbb_keys)
             params = [{'params': bb_lr, 'lr': config.TRAIN.LR}, {'params': nbb_lr, 'lr': config.TRAIN.LR * config.TRAIN.NONBACKBONE_MULT}]
         else:
             params = [{'params': list(params_dict.values()), 'lr': config.TRAIN.LR}]
@@ -272,20 +271,21 @@ def main():
                         config.TRAIN.BATCH_SIZE_PER_GPU / len(gpus))
     best_mIoU = 0
     last_epoch = 0
+    best_idr = 0
 
     # resuming training from previously trained weights
     if config.TRAIN.RESUME:
         model_state_file = os.path.join(final_output_dir,
                                         'checkpoint.pth.tar')
-        if os.path.isfile(model_state_file):
-            checkpoint = torch.load(model_state_file, map_location={'cuda:0': 'cpu'})
-            best_mIoU = checkpoint['best_mIoU']
-            last_epoch = checkpoint['epoch']
-            dct = checkpoint['state_dict']
-            model.module.model.load_state_dict({k.replace('model.', ''): v for k, v in checkpoint['state_dict'].items() if k.startswith('model.')})
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            logger.info("=> loaded checkpoint (epoch {})"
-                        .format(checkpoint['epoch']))
+        # if os.path.isfile(model_state_file):
+        #     checkpoint = torch.load(model_state_file, map_location={'cuda:0': 'cpu'})
+        #     best_mIoU = checkpoint['best_mIoU']
+        #     last_epoch = checkpoint['epoch']
+        #     dct = checkpoint['state_dict']
+        #     model.module.model.load_state_dict({k.replace('model.', ''): v for k, v in checkpoint['state_dict'].items() if k.startswith('model.')})
+        #     optimizer.load_state_dict(checkpoint['optimizer'])
+        #     logger.info("=> loaded checkpoint (epoch {})"
+        #                 .format(checkpoint['epoch']))
         if distributed:
             torch.distributed.barrier()
 
@@ -294,7 +294,7 @@ def main():
     num_iters = config.TRAIN.END_EPOCH * epoch_iters
     extra_iters = config.TRAIN.EXTRA_EPOCH * extra_epoch_iters
 
-    print('line 288')
+    val_global_step = 0
     # main training loop
     for epoch in range(last_epoch, end_epoch):
 
@@ -302,38 +302,52 @@ def main():
         if current_trainloader.sampler is not None and hasattr(current_trainloader.sampler, 'set_epoch'):
             current_trainloader.sampler.set_epoch(epoch)
 
-        # valid_loss, mean_IoU, IoU_array = validate(config, 
-        #             testloader, model, writer_dict)
+        # ================= debug=============
+        # valid_loss, mean_IoU, IoU_array = validate(config, testloader, model,
+        #                                        criterion, writer_dict,
+        #                                        epoch)
+        # mean_IoU, IoU_array, idr_avg, mean_acc, val_global_step = testval(config, \
+        #                 test_dataset, testloader, model, evaluator, writer_dict, val_global_step, epoch)
+        # print('tested testval !!!!')
+        # sys.exit()
+        # ====================================
 
         if epoch >= config.TRAIN.END_EPOCH:
-            train(config, epoch-config.TRAIN.END_EPOCH, 
-                  config.TRAIN.EXTRA_EPOCH, extra_epoch_iters, 
-                  config.TRAIN.EXTRA_LR, extra_iters, 
-                  extra_trainloader, optimizer, model, criterion, writer_dict)
+            train(config, epoch, config.TRAIN.END_EPOCH, \
+                  config.TRAIN.EXTRA_EPOCH, extra_epoch_iters, \
+                  config.TRAIN.EXTRA_LR, extra_iters, \
+                  extra_trainloader, optimizer, model, criterion, evaluator,
+                  writer_dict)
         else:
-            train(config, epoch, config.TRAIN.END_EPOCH, 
-                  epoch_iters, config.TRAIN.LR, num_iters,
-                  trainloader, optimizer, model, criterion, writer_dict)
+            train(config, epoch, config.TRAIN.END_EPOCH, \
+                  epoch_iters, config.TRAIN.LR, num_iters, \
+                  trainloader, optimizer, model, criterion, evaluator,
+                  writer_dict)
 
-        valid_loss, mean_IoU, IoU_array = validate(config, 
-                    testloader, model, criterion, writer_dict)
+        if (epoch % 5 == 0):
+            valid_loss, mean_IoU, IoU_array = validate(config, testloader, model,
+                                                   criterion, writer_dict,
+                                                   epoch)
+            mIoU, IoU_array, idr_avg, mean_acc, val_global_step = testval(config, \
+                        test_dataset, testloader, model, evaluator, writer_dict, val_global_step, epoch)
 
         # logging various training related metric and files
         if args.local_rank <= 0:
             logger.info('=> saving checkpoint to {}'.format(
-                final_output_dir + 'checkpoint.pth.tar'))
+                final_output_dir + '{}.checkpoint.pth.tar'.format(epoch)))
             torch.save({
                 'epoch': epoch+1,
                 'best_mIoU': best_mIoU,
                 'state_dict': model.module.state_dict(),
                 'optimizer': optimizer.state_dict(),
-            }, os.path.join(final_output_dir,'checkpoint.pth.tar'))
-            if mean_IoU > best_mIoU:
-                best_mIoU = mean_IoU
+            },
+                os.path.join(final_output_dir,'{}.checkpoint.pth.tar'.format(epoch)))
+            if idr_avg > best_idr:
+                best_idr = idr_avg
                 torch.save(model.module.state_dict(),
                         os.path.join(final_output_dir, 'best.pth'))
-            msg = 'Loss: {:.3f}, MeanIU: {: 4.4f}, Best_mIoU: {: 4.4f}'.format(
-                        valid_loss, mean_IoU, best_mIoU)
+            msg = 'Loss: {:.3f}, MeanIU: {: 4.4f}, Best_IDR: {: 4.4f}'.format(
+                        valid_loss, mean_IoU, best_idr)
             logging.info(msg)
             logging.info(IoU_array)
 
@@ -343,7 +357,7 @@ def main():
         torch.save(model.module.state_dict(),
                 os.path.join(final_output_dir, 'final_state.pth'))
 
-        writer_dict['writer'].close()
+        writer_dict['writer'].writer.close()
         end = timeit.default_timer()
         logger.info('Hours: %d' % np.int((end-start)/3600))
         logger.info('Done')

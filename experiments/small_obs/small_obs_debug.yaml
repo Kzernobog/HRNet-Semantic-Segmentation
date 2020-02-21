@@ -3,16 +3,16 @@ CUDNN:
   DETERMINISTIC: false
   ENABLED: true
 GPUS: (0,1)
-OUTPUT_DIR: '/scratch/adityaRRC/HRNet/output'
-LOG_DIR: '/scratch/adityaRRC/HRNet/log'
+OUTPUT_DIR: '/scratch/adityaRRC/HRNet/debug/output'
+LOG_DIR: '/scratch/adityaRRC/HRNet/debug/log'
 WORKERS: 4
 PRINT_FREQ: 10
 
 DATASET:
   DATASET: small_obs 
   ROOT: data/
-  TEST_SET: 'list/small_obs/data/val.lst'
-  TRAIN_SET: 'list/small_obs/data/train.lst'
+  TEST_SET: 'list/small_obs/debug/val_debug.lst'
+  TRAIN_SET: 'list/small_obs/debug/train_debug.lst'
   NUM_CLASSES: 3
 MODEL:
   NAME: seg_hrnet_ocr
@@ -81,7 +81,7 @@ TRAIN:
   BATCH_SIZE_PER_GPU: 2
   SHUFFLE: true
   BEGIN_EPOCH: 0
-  END_EPOCH: 40
+  END_EPOCH: 1
   RESUME: true
   OPTIMIZER: sgd
   LR: 0.01

@@ -1,3 +1,4 @@
+import sys
 import os
 import cv2
 import numpy as np
@@ -103,7 +104,6 @@ class Smallobs(BaseDataset):
         # crop image
         image = image[50:562, 280:1000, :3].copy()
         size = image.shape
-        # print('size: ', size)
 
         if 'test' in self.list_path:
             image = self.input_transform(image)
@@ -117,15 +117,9 @@ class Smallobs(BaseDataset):
         label = label[50:562, 280:1000].copy()
         label[label == 255] = 0
         label[label > 2] = 2
-        # label_unique = np.unique(label)
-        # print('unique labels: ', label_unique)
-        print('label shape: ', label.shape)
 
         # converts labels for the cityscapes dataset
         # label = self.convert_label(label)
-
-        label = np.ascontiguousarray(label)
-        image = np.ascontiguousarray(image)
 
         image, label = self.gen_sample(image, label, self.multi_scale, self.flip)
 

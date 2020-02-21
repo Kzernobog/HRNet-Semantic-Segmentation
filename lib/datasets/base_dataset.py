@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 
 import os
-
+from PIL import Image
 import cv2
 import numpy as np
 import random
@@ -124,8 +124,18 @@ class BaseDataset(data.Dataset):
         #                                         rand_scale=rand_scale)
 
         # image = self.random_brightness(image)
+        image = Image.fromarray(image)
+        label = Image.fromarray(label)
+        if random.random() < 0.5:
+            image = image.transpose(Image.FLIP_LEFT_RIGHT)
+            label = label.transpose(Image.FLIP_LEFT_RIGHT)
+
+        image = np.asarray(image)
+        label = np.asarray(label)
+
         image = self.input_transform(image)
         label = self.label_transform(label)
+
 
         image = image.transpose((2, 0, 1))
 

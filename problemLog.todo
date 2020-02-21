@@ -1,22 +1,58 @@
 Getting the network to train on Small obstacle dataset
+- [X] change testval function for validation and custom metrics
+  - [X] argmax of pred 
+    - [X] check shape of pred
+    - [X] print unique values after argmax
+  - [X] metrics of pred
+  - [X] logging pred
+    - [X] pass writer_dict to testval function
+    - [X] log image
+    - [X] log metrics
+  - [X] saving checkpoints
+    - [X] save all validation checkpoints
+    - [X] save best trained based on IDR
+- [ ] validation pdr, idr, SO_iou always 0 after 100 epochs of training
+  - [X] image augmentation, apply random flip
+  - [ ] check if the network output is what you expected
+  - [ ] check if correct loss is being calculated
+- [X] modify dataloader number of workers
 - [X] cuDNN error: error may be due to non contiguous tensor input, happening when back propogating loss
   - [X] try calculating loss outside the model -> did not work, same error
     - [X] change from FullModel to normal model
     - [X] send the criterion into train function as a parameter
     - [X] modify train function accordingly
-  - [X] change version of pytorch to 1.1.0, from 1.4.0 -> worked
-- [ ] define the class weight tensor for loss
-  - [ ] create batch wise class weights
-  - [ ] create batch wise loss computation
+  - [X] change version of pytorch to 1.1.0, from 1.4.0 -> works
+- [X] define the class weight tensor for loss
+  - [X] include a separate loss function
+  - [X] create batch wise class weights
+  - [X] create batch wise loss computation
+  - [X] test
+- [ ] check if loss being calculated across all GPUs
 - [X] custom dataloader issues, negative numpy strides not compatible with pytorch issue -> dont splice numpy array with a negative splice (# image = image.astype(np.float32)[:, :, ::-1]), this has some issue with pytorch
 - [ ] figure out a way to use SyncBatchNorm with nn.DataParallel, it can only be used with torch's nn.DistributedDataParallel
   - [X] try and use DeepLab's SynchronizedBatchNorm2D implementation with nn.DataParallel
   - [X] change bn_helper.py to return deeplab_sbn.py's batchnorm, instead of torch's batchnorm
   - [X] include patch_replicate
+  - [ ] check correctness of implementation
+  - [ ] test
+- [X] wrap all major loops inside tqdm
+  - [X] test
+- [X] check whether model outputs softmax values or just feature map -> model outputs feature map, not softmax
+  - [X] check what exactly the output is -> its a list of 2 [out, out_aux], of same dimensions
+  - [X] calculate average of output according to how it is done in loss estimation
 - [ ] integrate aasheesh's tensorboard ideas
+  - [X] lift summarywriter from A's deeplab codebase
+  - [X] manage log paths
+  - [X] log all metrics and images
+  - [X] visualise image in a grid
+  - [ ] test
 - [ ] integrate deeplab metrics
+  - [X] lift metric code from A's deeplab codebase
+  - [X] manage log paths
+  - [X] calculate metrics
+  - [ ] test
 - [ ] integrate mlflow tracking
-- [ ] remove all print statements
+- [X] remove all print statements
 - [ ] figure out why train_distributed hangs
   - [ ] experiment with local rank args option
   - [ ] it is definitely a problem with NCCL, what is it??
@@ -27,3 +63,5 @@ Getting the network to train on Small obstacle dataset
   - [X] prints on train.py -> still hangs
   - [X] Find out where exactly it hangs -> hanging when wrapping model with nn.DistributedDataParallel
   - [X] why is the default value of local_rank not -1, even though we are not giving anything -> this has to be because torch.distributed.launch passes this argument to the python script
+- [ ] decrease GPU idle time during training
+  - [ ] debug where it is taking the maximum amount of time

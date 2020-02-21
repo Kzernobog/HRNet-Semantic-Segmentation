@@ -13,3 +13,4 @@ data/list
 *.sh
 pretrained/
 env/
+*.nfs*
