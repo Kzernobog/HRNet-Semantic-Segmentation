@@ -2,7 +2,7 @@ CUDNN:
   BENCHMARK: true
   DETERMINISTIC: false
   ENABLED: true
-GPUS: (0,1)
+GPUS: (0,)
 OUTPUT_DIR: '/scratch/adityaRRC/HRNet/debug/output'
 LOG_DIR: '/scratch/adityaRRC/HRNet/debug/log'
 WORKERS: 4
@@ -75,7 +75,7 @@ LOSS:
   BALANCE_WEIGHTS: [0.4, 1]
 TRAIN:
   IMAGE_SIZE:
-  - 720 
+  - 1024 
   - 512
   BASE_SIZE: 2048
   BATCH_SIZE_PER_GPU: 1
@@ -95,8 +95,8 @@ TRAIN:
   SCALE_FACTOR: 16
 TEST:
   IMAGE_SIZE:
-  - 720 
-  - 512 
+  - 2048
+  - 1024
   BASE_SIZE: 2048
   BATCH_SIZE_PER_GPU: 1
   FLIP_TEST: false

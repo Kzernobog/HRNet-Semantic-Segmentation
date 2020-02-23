@@ -78,10 +78,10 @@ def main():
     model = eval('models.'+config.MODEL.NAME +
                  '.get_seg_model')(config)
 
-    dump_input = torch.rand(
-        (1, 3, config.TEST.IMAGE_SIZE[1], config.TEST.IMAGE_SIZE[0])
-    )
-    logger.info(get_model_summary(model.cuda(), dump_input.cuda()))
+    # dump_input = torch.rand(
+    #     (1, 3, config.TEST.IMAGE_SIZE[1], config.TEST.IMAGE_SIZE[0])
+    # )
+    # logger.info(get_model_summary(model.cuda(), dump_input.cuda()))
     gpus = list(config.GPUS)
     model = nn.DataParallel(model, device_ids=gpus).cuda()
 
@@ -129,25 +129,25 @@ def main():
     val_global_step = 0
     epoch = 0
     start = timeit.default_timer()
-    if 'val' in config.DATASET.TEST_SET:
+    # if 'val' in config.DATASET.TEST_SET:
         # mean_IoU, IoU_array, pixel_acc, mean_acc = testval(config, 
         #                                                    test_dataset, 
         #                                                    testloader, 
         #                                                    model)
-        mean_IoU, IoU_array, idr_avg, mean_acc, val_global_step = testval(config, \
-                        test_dataset, testloader, model, evaluator, writer_dict, val_global_step, epoch)
+    mean_IoU, IoU_array, idr_avg, mean_acc, val_global_step = testval(config, \
+                    test_dataset, testloader, model, evaluator, writer_dict, val_global_step, epoch)
     
-        msg = 'MeanIU: {: 4.4f}, Pixel_Acc: {: 4.4f}, \
-            Mean_Acc: {: 4.4f}, Class IoU: '.format(mean_IoU, 
-            pixel_acc, mean_acc)
-        logging.info(msg)
-        logging.info(IoU_array)
-    elif 'test' in config.DATASET.TEST_SET:
-        test(config, 
-             test_dataset, 
-             testloader, 
-             model,
-             sv_dir=final_output_dir)
+        # msg = 'MeanIU: {: 4.4f}, Pixel_Acc: {: 4.4f}, \
+        #     Mean_Acc: {: 4.4f}, Class IoU: '.format(mean_IoU, 
+        #     pixel_acc, mean_acc)
+        # logging.info(msg)
+        # logging.info(IoU_array)
+    # elif 'test' in config.DATASET.TEST_SET:
+    #     test(config, 
+    #          test_dataset, 
+    #          testloader, 
+    #          model,
+    #          sv_dir=final_output_dir)
 
     end = timeit.default_timer()
     logger.info('Mins: %d' % np.int((end-start)/60))
