@@ -1,9 +1,9 @@
 Getting the network to train on Small obstacle dataset
-- [ ] validation pdr, idr, SO_iou very less
+- [X] validation pdr, idr, SO_iou very less -> should run test script on 1 GPU, change the GPUS tag in yaml to (0,)
   - [X] check hypothesis that custom SyncBatchNorm is causing the problem
   - [X] remove SyncBatchNorm2D for single GPU
   - [X] test on test debug
-  - [ ] multi GPU - custom BatchNorm, single GPU nn.BatchNorm2D
+  - [X] multi GPU - custom BatchNorm, single GPU nn.BatchNorm2D
 - [X] create separate validation/testing script
 - [X] change testval function for validation and custom metrics
   - [X] argmax of pred 
