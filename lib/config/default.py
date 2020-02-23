@@ -98,6 +98,7 @@ _C.TRAIN.EXTRA_EPOCH = 0
 _C.TRAIN.RESUME = False
 
 _C.TRAIN.BATCH_SIZE_PER_GPU = 32
+_C.TRAIN.NUM_GPUS = 1
 _C.TRAIN.SHUFFLE = True
 # only using some training samples
 _C.TRAIN.NUM_SAMPLES = 0
@@ -111,6 +112,7 @@ _C.TEST.BASE_SIZE = 2048
 _C.TEST.BATCH_SIZE_PER_GPU = 32
 # only testing some samples
 _C.TEST.NUM_SAMPLES = 0
+_C.TEST.NUM_GPUS = 1
 
 _C.TEST.MODEL_FILE = ''
 _C.TEST.FLIP_TEST = False

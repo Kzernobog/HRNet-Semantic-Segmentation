@@ -241,7 +241,6 @@ def validate(config, testloader, model, criterion, writer_dict, epoch):
 
 def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
             val_global_step, epoch, sv_dir='', sv_pred=False):
-    model.eval()
     confusion_matrix = np.zeros( (config.DATASET.NUM_CLASSES, config.DATASET.NUM_CLASSES))
 
     # reset the evaluator
@@ -253,8 +252,13 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
     # fluff
     t_val_bar = tqdm(testloader)
 
+    count = 0
+
     with torch.no_grad():
         for index, batch in enumerate(t_val_bar):
+            if count > 100:
+                model.eval()
+            count += 1
             image, label, _, name = batch
             size = label.size()
             pred = test_dataset.multi_scale_inference(
@@ -346,8 +350,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
     if idr_avg is not None:
         writer.writer.add_scalar('metrics/val_idr_epoch', np.mean(idr_avg), epoch)
 
-    logging.info('PDR: {}; IDR: {} SO_IOU: {}'.format(recall, np.mean(idr_avg),
-                                                     class_iou))
+    logging.info('PDR: {}; IDR avg: {}; IDR_20: {}; SO_IOU: {}'.format(recall, np.mean(idr_avg), idr_avg[0], class_iou))
 
     return mean_IoU, IoU_array, np.mean(idr_avg), mean_acc, val_global_step
 

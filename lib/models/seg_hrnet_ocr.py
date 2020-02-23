@@ -22,7 +22,7 @@ import torch.nn.functional as F
 from .bn_helper import BatchNorm2d, BatchNorm2d_class, relu_inplace
 
 ALIGN_CORNERS = True
-BN_MOMENTUM = 0.1
+BN_MOMENTUM = 0.5
 logger = logging.getLogger(__name__)
 
 class ModuleHelper:

@@ -125,7 +125,7 @@ def main():
     if distributed:
         batch_size = config.TRAIN.BATCH_SIZE_PER_GPU
     else:
-        batch_size = config.TRAIN.BATCH_SIZE_PER_GPU * len(gpus)
+        batch_size = config.TRAIN.BATCH_SIZE_PER_GPU # * len(gpus)
 
     # prepare data - nn.Dataset object for training
     crop_size = (config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
@@ -275,8 +275,14 @@ def main():
 
     # resuming training from previously trained weights
     if config.TRAIN.RESUME:
-        model_state_file = os.path.join(final_output_dir,
-                                        'checkpoint.pth.tar')
+        # ================ debug =================
+        # model_state_file = os.path.join(final_output_dir,
+        #                                 'checkpoint.pth.tar')
+        # weight_path = '/scratch/adityaRRC/HRNet/output/small_obs/small_obs/9.checkpoint.pth.tar'
+        # checkpoint = torch.load(weight_path)
+        # for k in checkpoint.keys():
+        #     print(k)
+        # model.load_state_dict(checkpoint['state_dict'])
         # if os.path.isfile(model_state_file):
         #     checkpoint = torch.load(model_state_file, map_location={'cuda:0': 'cpu'})
         #     best_mIoU = checkpoint['best_mIoU']
@@ -286,6 +292,7 @@ def main():
         #     optimizer.load_state_dict(checkpoint['optimizer'])
         #     logger.info("=> loaded checkpoint (epoch {})"
         #                 .format(checkpoint['epoch']))
+        # =============================================
         if distributed:
             torch.distributed.barrier()
 
@@ -303,7 +310,7 @@ def main():
             current_trainloader.sampler.set_epoch(epoch)
 
         # ================= debug=============
-        # valid_loss, mean_IoU, IoU_array = validate(config, testloader, model,
+        # valid_loss, mean_IoU, IoU_array = validate(config, trainloader, model,
         #                                        criterion, writer_dict,
         #                                        epoch)
         # mean_IoU, IoU_array, idr_avg, mean_acc, val_global_step = testval(config, \
@@ -338,13 +345,13 @@ def main():
             torch.save({
                 'epoch': epoch+1,
                 'best_mIoU': best_mIoU,
-                'state_dict': model.module.state_dict(),
+                'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
             },
                 os.path.join(final_output_dir,'{}.checkpoint.pth.tar'.format(epoch)))
             if idr_avg > best_idr:
                 best_idr = idr_avg
-                torch.save(model.module.state_dict(),
+                torch.save(model.state_dict(),
                         os.path.join(final_output_dir, 'best.pth'))
             msg = 'Loss: {:.3f}, MeanIU: {: 4.4f}, Best_IDR: {: 4.4f}'.format(
                         valid_loss, mean_IoU, best_idr)
@@ -354,7 +361,7 @@ def main():
     # final logging
     if args.local_rank <= 0:
 
-        torch.save(model.module.state_dict(),
+        torch.save(model.state_dict(),
                 os.path.join(final_output_dir, 'final_state.pth'))
 
         writer_dict['writer'].writer.close()

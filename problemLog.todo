@@ -1,4 +1,10 @@
 Getting the network to train on Small obstacle dataset
+- [ ] validation pdr, idr, SO_iou very less
+  - [X] check hypothesis that custom SyncBatchNorm is causing the problem
+  - [X] remove SyncBatchNorm2D for single GPU
+  - [X] test on test debug
+  - [ ] multi GPU - custom BatchNorm, single GPU nn.BatchNorm2D
+- [X] create separate validation/testing script
 - [X] change testval function for validation and custom metrics
   - [X] argmax of pred 
     - [X] check shape of pred
@@ -11,10 +17,6 @@ Getting the network to train on Small obstacle dataset
   - [X] saving checkpoints
     - [X] save all validation checkpoints
     - [X] save best trained based on IDR
-- [ ] validation pdr, idr, SO_iou always 0 after 100 epochs of training
-  - [X] image augmentation, apply random flip
-  - [ ] check if the network output is what you expected
-  - [ ] check if correct loss is being calculated
 - [X] modify dataloader number of workers
 - [X] cuDNN error: error may be due to non contiguous tensor input, happening when back propogating loss
   - [X] try calculating loss outside the model -> did not work, same error
