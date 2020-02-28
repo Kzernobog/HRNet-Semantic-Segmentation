@@ -64,24 +64,25 @@ class Smallobs(BaseDataset):
     
     def read_files(self):
         files = []
-        if 'test' in self.list_path:
-            for item in self.img_list:
-                image_path = item
-                name = os.path.splitext(os.path.basename(image_path[0]))[0]
-                files.append({
-                    "img": image_path[0],
-                    "name": name,
-                })
-        else:
-            for item in self.img_list:
-                image_path, label_path = item
-                name = os.path.splitext(os.path.basename(label_path))[0]
-                files.append({
-                    "img": image_path,
-                    "label": label_path,
-                    "name": name,
-                    "weight": 1
-                })
+        # if 'test' in self.list_path:
+        #     for item in self.img_list:
+        #         image_path = item
+        #         name = os.path.splitext(os.path.basename(image_path[0]))[0]
+        #         files.append({
+        #             "img": image_path[0],
+        #             "name": name,
+        #         })
+        # else:
+        for item in self.img_list:
+            image_path, label_path, context_path= item
+            name = os.path.splitext(os.path.basename(label_path))[0]
+            files.append({
+                "img": image_path,
+                "label": label_path,
+                "context": context_path,
+                "name": name,
+                "weight": 1
+            })
         return files
         
     def convert_label(self, label, inverse=False):
@@ -105,11 +106,11 @@ class Smallobs(BaseDataset):
         image = image[50:562, 280:1000, :3].copy()
         size = image.shape
 
-        if 'test' in self.list_path:
-            image = self.input_transform(image)
-            image = image.transpose((2, 0, 1))
+        # if 'test' in self.list_path:
+        #     image = self.input_transform(image)
+        #     image = image.transpose((2, 0, 1))
 
-            return image.copy(), np.array(size), name
+        #     return image.copy(), np.array(size), name
 
         temp_path = os.path.join(self.root,'cityscapes',item["label"])
         # label = cv2.imread(os.path.join(self.root,'cityscapes',item["label"]), cv2.IMREAD_GRAYSCALE)
@@ -118,14 +119,20 @@ class Smallobs(BaseDataset):
         label[label == 255] = 0
         label[label > 2] = 2
 
+        context_path = os.path.join(self.root, 'cityscapes', item["context"])
+        context_path = context_path.split('.')[0]+'.npy'
+        context = np.load(context_path).astype(dtype=np.float32)
+
+        context = context[50:562, 280:1000].copy()
+
         # converts labels for the cityscapes dataset
         # label = self.convert_label(label)
 
-        image, label = self.gen_sample(image, label, self.multi_scale, self.flip)
+        image, context, label = self.gen_sample(image, context, label, self.multi_scale, self.flip)
 
 
         # return torch.from_numpy(image), torch.from_numpy(label), np.array(size), name
-        return image, label, np.array(size), name
+        return image, context, label, np.array(size), name
 
     def multi_scale_inference(self, config, model, image, scales=[1], flip=False):
         batch, _, ori_height, ori_width = image.size()

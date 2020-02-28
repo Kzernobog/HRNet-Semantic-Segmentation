@@ -3,6 +3,9 @@ import functools
 from .deeplab_sbn.batchnorm import SynchronizedBatchNorm1d
 from .deeplab_sbn.batchnorm import SynchronizedBatchNorm2d
 from .deeplab_sbn.batchnorm import SynchronizedBatchNorm3d
+# from deeplab_sbn.batchnorm import SynchronizedBatchNorm1d
+# from deeplab_sbn.batchnorm import SynchronizedBatchNorm2d
+# from deeplab_sbn.batchnorm import SynchronizedBatchNorm3d
 import torch.nn as nn
 
 if torch.__version__.startswith('0'):

@@ -116,7 +116,7 @@ class BaseDataset(data.Dataset):
         img = np.clip(img, 0, 255).astype(np.uint8)
         return img
 
-    def gen_sample(self, image, label,
+    def gen_sample(self, image, context, label,
                    multi_scale=True, is_flip=True):
         # if multi_scale:
         #     rand_scale = 0.5 + random.randint(0, self.scale_factor) / 10.0
@@ -126,18 +126,23 @@ class BaseDataset(data.Dataset):
         # image = self.random_brightness(image)
         image = Image.fromarray(image)
         label = Image.fromarray(label)
+        context = Image.fromarray(context)
         if random.random() < 0.5:
             image = image.transpose(Image.FLIP_LEFT_RIGHT)
             label = label.transpose(Image.FLIP_LEFT_RIGHT)
+            context = context.transpose(Image.FLIP_LEFT_RIGHT)
 
         image = np.asarray(image)
         label = np.asarray(label)
+        context = np.asarray(context)
+        context = context.reshape((1, context.shape[0], context.shape[1]))
 
         image = self.input_transform(image)
         label = self.label_transform(label)
 
 
         image = image.transpose((2, 0, 1))
+        # context = context.transpose((2, 0, 1))
 
         # if is_flip:
         #     flip = np.random.choice(2) * 2 - 1
@@ -153,7 +158,7 @@ class BaseDataset(data.Dataset):
         #         interpolation=cv2.INTER_NEAREST
         #     )
 
-        return image, label
+        return image, context, label
 
     def inference(self, config, model, image, flip=False):
         size = image.size()

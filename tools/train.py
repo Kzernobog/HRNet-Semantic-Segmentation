@@ -335,7 +335,7 @@ def main():
             valid_loss, mean_IoU, IoU_array = validate(config, testloader, model,
                                                    criterion, writer_dict,
                                                    epoch)
-            mIoU, IoU_array, idr_avg, mean_acc, val_global_step = testval(config, \
+            mIoU, IoU_array, idr_20, mean_acc, val_global_step = testval(config, \
                         test_dataset, testloader, model, evaluator, writer_dict, val_global_step, epoch)
 
         # logging various training related metric and files
@@ -349,8 +349,8 @@ def main():
                 'optimizer': optimizer.state_dict(),
             },
                 os.path.join(final_output_dir,'{}.checkpoint.pth.tar'.format(epoch)))
-            if idr_avg > best_idr:
-                best_idr = idr_avg
+            if idr_20 > best_idr:
+                best_idr = idr_20
                 torch.save(model.state_dict(),
                         os.path.join(final_output_dir, 'best.pth'))
             msg = 'Loss: {:.3f}, MeanIU: {: 4.4f}, Best_IDR: {: 4.4f}'.format(

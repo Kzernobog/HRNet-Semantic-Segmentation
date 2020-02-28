@@ -61,10 +61,13 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr,
     for i_iter, batch in enumerate(t_train_bar):
 
 
-        images, labels, _, _ = batch
+        images, context, labels, _, _ = batch
         size = labels.size()
         images = images.cuda()
+        context = context.cuda()
         labels = labels.long().cuda()
+        images = torch.cat((images, context), 1)
+
 
         # losses, _ = model(images, labels)
         output = model(images)
@@ -167,12 +170,19 @@ def validate(config, testloader, model, criterion, writer_dict, epoch):
 
     t_val_bar = tqdm(testloader)
 
+    count = 0
+
     with torch.no_grad():
         for idx, batch in enumerate(t_val_bar):
-            image, label, _, _ = batch
+            if count > 100:
+                model.eval()
+            count += 1
+            image, context, label, _, _ = batch
             size = label.size()
             image = image.cuda()
             label = label.long().cuda()
+            context = context.cuda()
+            image = torch.cat((image, context), 1)
 
 
 
@@ -259,12 +269,13 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
             if count > 100:
                 model.eval()
             count += 1
-            image, label, _, name = batch
+            image, context, label, _, name = batch
+            image_cm = torch.cat((image, context), 1)
             size = label.size()
             pred = test_dataset.multi_scale_inference(
                 config,
                 model,
-                image,
+                image_cm,
                 scales=config.TEST.SCALE_LIST,
                 flip=config.TEST.FLIP_TEST)
 
@@ -352,7 +363,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
 
     logging.info('PDR: {}; IDR avg: {}; IDR_20: {}; SO_IOU: {}'.format(recall, np.mean(idr_avg), idr_avg[0], class_iou))
 
-    return mean_IoU, IoU_array, np.mean(idr_avg), mean_acc, val_global_step
+    return mean_IoU, IoU_array, idr_avg[0], mean_acc, val_global_step
 
 
 def test(config, test_dataset, testloader, model,

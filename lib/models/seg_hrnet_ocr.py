@@ -20,6 +20,7 @@ import torch._utils
 import torch.nn.functional as F
 
 from .bn_helper import BatchNorm2d, BatchNorm2d_class, relu_inplace
+# from bn_helper import BatchNorm2d, BatchNorm2d_class, relu_inplace
 
 ALIGN_CORNERS = True
 BN_MOMENTUM = 0.5
@@ -420,8 +421,9 @@ class HighResolutionNet(nn.Module):
         ALIGN_CORNERS = config.MODEL.ALIGN_CORNERS
 
         # stem net
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1,
-                               bias=False)
+        # self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=False)
+        # ne convolutional layer accepting 4 channel input for confidence maps
+        self.conv1 = nn.Conv2d(4, 64, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = BatchNorm2d(64, momentum=BN_MOMENTUM)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1,
                                bias=False)
@@ -682,7 +684,23 @@ def get_seg_model(cfg, **kwargs):
 if __name__ == "__main__":
     # change aux_head.3.weight from ([19, 720, 1, 1]) to ([3, 720, 1, 1])
     # change aux_head.3.bias from ([19]) to ([3])
-    pretrained = '/home/aditya/small_obstacle_ws/HRNet/pretrained/hrnet_cs_8090_torch11.pth'
+    pretrained = '/home/aditya/small_obstacle_ws/HRNet/pretrained/small_obs_cm_pretrained.pth'
     pretrained_dict = torch.load(pretrained, map_location={'cuda:0': 'cpu'})
-    print(pretrained_dict['state_dict']['aux_head.3.weight'].shape)
-    print(pretrained_dict['state_dict']['aux_head.3.bias'].shape)
+    count = 0
+      # print(pretrained_dict[k].shape)
+      # if count > 2:
+      #     break
+      # count += 1
+    #print(pretrained_dict['aux_head.3.weight'].shape)
+    #print(pretrained_dict['aux_head.3.bias'].shape)
+    weight_shape = [3, 720, 1, 1]
+    bias_shape = [3]
+    pretrained_dict['last_layer.3.weight'] = nn.init.kaiming_normal_(torch.empty(weight_shape))
+    pretrained_dict['last_layer.3.bias'] = nn.init.constant_(torch.empty(weight_shape[0]), 0)
+    # weight_shape = [64, 1, 3, 3]
+    # depth_channel = nn.init.kaiming_normal_(torch.empty(weight_shape))
+    # temp = torch.cat((pretrained_dict['conv1.weight'], depth_channel), 1)
+    # pretrained_dict['conv1.weight'] = temp
+    torch.save(pretrained_dict,
+               '/home/aditya/small_obstacle_ws/HRNet/pretrained/small_obs_cm_pretrained.pth')
+    # pretrained_dict['']
