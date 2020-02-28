@@ -1,18 +1,18 @@
 Getting the network to train on Small obstacle dataset
 - [ ] train HRNet for image + confidence map
   - [X] change model to accept 4 channel input
-  - [ ] change pretrained weight file, reinitialise 4th channel
-    - [ ] change last layer weight dimensions
+  - [X] change pretrained weight file, reinitialise 4th channel
+    - [X] change last layer weight dimensions
     - [X] initialise a channel and concatenate with the first layer filters
-  - [ ] custom dataset to load image + cm
+  - [X] custom dataset to load image + cm
     - [X] use corresponding dataset file form A's DeepLab experiment -> too tedious, modified existing dataset
     - [X] create debug and data lst files for train and val
-    - [ ] change point cloud to image after reading from context files
-    - [ ] normalisation for contexts
+    - [X] change point cloud to image after reading from context files
+    - [X] normalisation for contexts
   - [ ] Add all the new custom metrics
   - [ ] tweak visualizer to visualise CM
-  - [ ] change yaml file to reflect new experiment
-  - [ ] create debug file to debug training
+  - [X] change yaml file to reflect new experiment
+  - [X] create debug file to debug training
 - [X] validation pdr, idr, SO_iou very less -> should run test script on 1 GPU, change the GPUS tag in yaml to (0,)
   - [X] check hypothesis that custom SyncBatchNorm is causing the problem
   - [X] remove SyncBatchNorm2D for single GPU

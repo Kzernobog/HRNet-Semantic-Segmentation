@@ -2,7 +2,7 @@ CUDNN:
   BENCHMARK: true
   DETERMINISTIC: false
   ENABLED: true
-GPUS: (0,)
+GPUS: (0,1)
 OUTPUT_DIR: '/scratch/adityaRRC/HRNet/output'
 LOG_DIR: '/scratch/adityaRRC/HRNet/log'
 WORKERS: 4
@@ -17,7 +17,7 @@ DATASET:
 MODEL:
   NAME: seg_hrnet_ocr
   NUM_OUTPUTS: 2
-  PRETRAINED: "pretrained/small_obs_pretrained.pth"
+  PRETRAINED: "pretrained/small_obs_cm_pretrained.pth"
   EXTRA:
     FINAL_CONV_KERNEL: 1
     STAGE1:
@@ -81,7 +81,7 @@ TRAIN:
   BATCH_SIZE_PER_GPU: 2
   SHUFFLE: true
   BEGIN_EPOCH: 0
-  END_EPOCH: 40
+  END_EPOCH: 20
   RESUME: true
   OPTIMIZER: sgd
   LR: 0.01

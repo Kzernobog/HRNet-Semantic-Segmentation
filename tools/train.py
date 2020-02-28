@@ -6,7 +6,7 @@
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2"
 import pprint
 import shutil
 import sys
@@ -125,7 +125,7 @@ def main():
     if distributed:
         batch_size = config.TRAIN.BATCH_SIZE_PER_GPU
     else:
-        batch_size = config.TRAIN.BATCH_SIZE_PER_GPU # * len(gpus)
+        batch_size = config.TRAIN.BATCH_SIZE_PER_GPU * len(gpus)
 
     # prepare data - nn.Dataset object for training
     crop_size = (config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
