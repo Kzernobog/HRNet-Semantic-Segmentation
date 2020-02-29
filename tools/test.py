@@ -10,6 +10,7 @@ import pprint
 import shutil
 import sys
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2"
 import logging
 import time
 import timeit
