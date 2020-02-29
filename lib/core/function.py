@@ -268,7 +268,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
 
     with torch.no_grad():
         for index, batch in enumerate(t_val_bar):
-            if count > 100:
+            if count > 1:
                 model.eval()
             count += 1
             image, context, label, _, name = batch
