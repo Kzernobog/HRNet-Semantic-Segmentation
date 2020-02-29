@@ -268,7 +268,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
 
     with torch.no_grad():
         for index, batch in enumerate(t_val_bar):
-            if count > 50:
+            if count > 100:
                 model.eval()
             count += 1
             image, context, label, _, name = batch
@@ -343,7 +343,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
     Acc = evaluator.Pixel_Accuracy()
     Acc_class = evaluator.Pixel_Accuracy_Class()
     mIoU = evaluator.Mean_Intersection_over_Union()
-    FPR = evaluator.get_false_idr(class_id=2)
+    FPR = evaluator.get_false_idr(class_value=2)
     iIoU = evaluator.get_instance_iou(threshold=0.2)
     # class_iou = evaluator.class_IOU(class_num=2)
     FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
@@ -365,7 +365,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
     if idr_avg is not None:
         writer.writer.add_scalar('metrics/val_idr_epoch', np.mean(idr_avg), epoch)
 
-    logging.info('PDR: {}; FPR: {}; IDR_20: {}; iIoU: {}; mIoU'.format(recall, FPR, idr_avg[0], iIoU, mIoU))
+    logging.info('PDR: {}; FPR: {}; IDR_20: {}; iIoU: {}; mIoU: {}'.format(recall, FPR, idr_avg[0], iIoU, mIoU))
 
     return mean_IoU, IoU_array, idr_avg[0], mean_acc, val_global_step
 
