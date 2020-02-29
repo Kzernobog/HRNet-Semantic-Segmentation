@@ -10,7 +10,7 @@ import pprint
 import shutil
 import sys
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import logging
 import time
 import timeit
@@ -31,7 +31,7 @@ from core.function import testval, test
 from utils.modelsummary import get_model_summary
 from utils.utils import create_logger, FullModel
 from utils.summary import TensorboardSummary
-from utils.metrics import Evaluator
+from utils.metrics2 import Evaluator
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train segmentation network')
