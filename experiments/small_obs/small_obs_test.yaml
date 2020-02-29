@@ -101,4 +101,4 @@ TEST:
   BATCH_SIZE_PER_GPU: 1
   FLIP_TEST: false
   MULTI_SCALE: false
-  MODEL_FILE: "/scratch/adityaRRC/HRNet/output/small_obs/small_obs/4.checkpoint.pth.tar"
+  MODEL_FILE: "/scratch/adityaRRC/HRNet/output/small_obs/small_obs/1.checkpoint.pth.tar"
