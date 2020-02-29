@@ -5,7 +5,7 @@ CUDNN:
 GPUS: (0,)
 OUTPUT_DIR: '/scratch/adityaRRC/HRNet/output'
 LOG_DIR: '/scratch/adityaRRC/HRNet/log'
-WORKERS: 4
+WORKERS: 1
 PRINT_FREQ: 10
 
 DATASET:
@@ -81,7 +81,7 @@ TRAIN:
   BATCH_SIZE_PER_GPU: 2
   SHUFFLE: true
   BEGIN_EPOCH: 0
-  END_EPOCH: 40
+  END_EPOCH: 1
   RESUME: true
   OPTIMIZER: sgd
   LR: 0.01
@@ -101,4 +101,4 @@ TEST:
   BATCH_SIZE_PER_GPU: 1
   FLIP_TEST: false
   MULTI_SCALE: false
-  MODEL_FILE: "/scratch/adityaRRC/HRNet/output/small_obs/small_obs/9.checkpoint.pth.tar"
+  MODEL_FILE: "/scratch/adityaRRC/HRNet/output/small_obs/small_obs/4.checkpoint.pth.tar"

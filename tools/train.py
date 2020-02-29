@@ -6,7 +6,7 @@
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import pprint
 import shutil
 import sys

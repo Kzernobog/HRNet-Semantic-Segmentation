@@ -10,6 +10,7 @@ import pprint
 import shutil
 import sys
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import logging
 import time
 import timeit
@@ -73,7 +74,7 @@ def main():
     # build model
     if torch.__version__.startswith('1'):
         module = eval('models.'+config.MODEL.NAME)
-        print(module)
+        # print(module)
         module.BatchNorm2d_class = module.BatchNorm2d = torch.nn.BatchNorm2d
     model = eval('models.'+config.MODEL.NAME +
                  '.get_seg_model')(config)
@@ -83,7 +84,11 @@ def main():
     # )
     # logger.info(get_model_summary(model.cuda(), dump_input.cuda()))
     gpus = list(config.GPUS)
-    model = nn.DataParallel(model, device_ids=gpus).cuda()
+    print(gpus)
+    # torch.cuda.set_device(gpus[0])
+    model = nn.DataParallel(model, device_ids=gpus)
+    model=model.cuda()
+    # model = model.cuda()
 
     if config.TEST.MODEL_FILE:
         model_state_file = config.TEST.MODEL_FILE
@@ -92,6 +97,7 @@ def main():
                                         'best.pth')
     logger.info('=> loading model from {}'.format(model_state_file))
 
+    # checkpoint = torch.load(model_state_file, map_location='cpu')
     checkpoint = torch.load(model_state_file)
     # pretrained_dict = torch.load(model_state_file)
     # model_dict = model.state_dict()
