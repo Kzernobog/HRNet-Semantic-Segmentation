@@ -33,7 +33,7 @@ from core.criterion import CrossEntropy, OhemCrossEntropy
 from core.function import train, validate, testval
 from utils.modelsummary import get_model_summary
 from utils.utils import create_logger, FullModel
-from utils.metrics import Evaluator
+from utils.metrics2 import Evaluator
 from utils.summary import TensorboardSummary
 
 def parse_args():

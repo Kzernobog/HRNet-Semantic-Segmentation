@@ -131,12 +131,14 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr,
     Acc_class = evaluator.Pixel_Accuracy_Class()
     mIoU = evaluator.Mean_Intersection_over_Union()
     FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
-    class_iou = evaluator.class_IOU(class_num=2)
+    # class_iou = evaluator.class_IOU(class_num=2)
     recall,precision = evaluator.pdr_metric(class_id=2)
+    fpr = evaluator.get_false_idr(class_value=2)
+    instance_iou = evaluator.get_instance_iou(threshold=0.2)
     idr_avg = np.array([evaluator.get_idr(class_value=2, threshold=value) for value in idr_thresholds])
     writer.writer.add_scalar('loss/train_epoch_loss', ave_loss.average(), epoch)
     writer.writer.add_scalar('metrics/train_miou', mIoU, epoch)
-    writer.writer.add_scalar('metrics/train_SO_iou', class_iou, epoch)
+    # writer.writer.add_scalar('metrics/train_SO_iou', class_iou, epoch)
     writer.writer.add_scalar('metrics/train_acc', Acc, epoch)
     writer.writer.add_scalar('metrics/train_acc_cl', Acc_class, epoch)
     writer.writer.add_scalar('metrics/train_fwIoU', FWIoU, epoch)
@@ -330,13 +332,14 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
     Acc = evaluator.Pixel_Accuracy()
     Acc_class = evaluator.Pixel_Accuracy_Class()
     mIoU = evaluator.Mean_Intersection_over_Union()
-    class_iou = evaluator.class_IOU(class_num=2)
+    fpr = evaluator.get_false_idr(class_value=2)
+    instance_iou = evaluator.get_instance_iou(threshold=0.2)
     FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
     recall,precision=evaluator.pdr_metric(class_id=2)
     # idr = evaluator.get_idr(class_value=2)
     idr_avg = np.array([evaluator.get_idr(class_value=2, threshold=value) for value in idr_thresholds])
     writer.writer.add_scalar('metrics/val_idr_0.20', idr_avg[0], epoch)
-    writer.writer.add_scalar('metrics/val_SO_iou', class_iou, epoch)
+    # writer.writer.add_scalar('metrics/val_SO_iou', class_iou, epoch)
     writer.writer.add_scalar('metrics/val_idr_0.65', idr_avg[-1], epoch)
     writer.writer.add_scalar('metrics/val_idr_avg', np.mean(idr_avg), epoch)
     writer.writer.add_scalar('metrics/val_miou', mIoU, epoch)
@@ -350,7 +353,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
     if idr_avg is not None:
         writer.writer.add_scalar('metrics/val_idr_epoch', np.mean(idr_avg), epoch)
 
-    logging.info('PDR: {}; IDR avg: {}; IDR_20: {}; SO_IOU: {}'.format(recall, np.mean(idr_avg), idr_avg[0], class_iou))
+    logging.info('PDR: {}; FPR: {}; IDR_20: {}; iIoU: {}'.format(recall, fpr, idr_avg[0], instance_iou))
 
     return mean_IoU, IoU_array, np.mean(idr_avg), mean_acc, val_global_step
 
