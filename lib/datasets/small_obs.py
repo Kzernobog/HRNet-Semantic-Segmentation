@@ -123,7 +123,6 @@ class Smallobs(BaseDataset):
         context_path = context_path.split('.')[0]+'.npy'
         context = np.load(context_path).astype(dtype=np.float32)
 
-        context = context[50:562, 280:1000].copy()
 
         # converts labels for the cityscapes dataset
         # label = self.convert_label(label)

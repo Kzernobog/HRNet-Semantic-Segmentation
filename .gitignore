@@ -8,7 +8,6 @@ scripts/
 detail-api/
 *.DS_Store
 *.swp
-*.sh
 pretrained/
 env/
 *.nfs*
