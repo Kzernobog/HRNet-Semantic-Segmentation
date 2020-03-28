@@ -136,7 +136,7 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr,
     FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
     # class_iou = evaluator.class_IOU(class_num=2)
     recall,precision = evaluator.pdr_metric(class_id=2)
-    FPR = evaluator.get_false_idr(class_id=2)
+    FPR = evaluator.get_false_idr(class_value=2)
     iIoU = evaluator.get_instance_iou(threshold=0.2)
     idr_avg = np.array([evaluator.get_idr(class_value=2, threshold=value) for value in idr_thresholds])
     writer.writer.add_scalar('loss/train_epoch_loss', ave_loss.average(), epoch)
@@ -268,7 +268,7 @@ def testval(config, test_dataset, testloader, model, evaluator, writer_dict,
 
     with torch.no_grad():
         for index, batch in enumerate(t_val_bar):
-            if count > 1:
+            if count > 25:
                 model.eval()
             count += 1
             image, context, label, _, name = batch

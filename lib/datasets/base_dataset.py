@@ -127,10 +127,10 @@ class BaseDataset(data.Dataset):
         image = Image.fromarray(image)
         label = Image.fromarray(label)
         context = Image.fromarray(context)
-        if random.random() < 0.5:
-            image = image.transpose(Image.FLIP_LEFT_RIGHT)
-            label = label.transpose(Image.FLIP_LEFT_RIGHT)
-            context = context.transpose(Image.FLIP_LEFT_RIGHT)
+        # if random.random() < 0.5:
+        #     image = image.transpose(Image.FLIP_LEFT_RIGHT)
+        #     label = label.transpose(Image.FLIP_LEFT_RIGHT)
+        #     context = context.transpose(Image.FLIP_LEFT_RIGHT)
 
         image = np.asarray(image)
         label = np.asarray(label)
